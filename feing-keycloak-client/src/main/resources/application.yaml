@@ -1,3 +1,18 @@
+server:
+  port : 8081
+
 spring:
   application:
     name: feing-keycloak-client
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
