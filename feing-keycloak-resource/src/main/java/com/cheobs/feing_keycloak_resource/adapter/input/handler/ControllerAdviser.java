@@ -29,7 +29,8 @@ public class ControllerAdviser {
                 "traceId", MDC.get("traceId")
         );
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(body);
     }
 
 }
