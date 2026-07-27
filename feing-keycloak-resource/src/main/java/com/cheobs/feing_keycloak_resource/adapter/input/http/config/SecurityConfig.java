@@ -1,4 +1,4 @@
-package com.cheobs.feing_keycloak_resource.adapter.input.handler;
+package com.cheobs.feing_keycloak_resource.adapter.input.http.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
