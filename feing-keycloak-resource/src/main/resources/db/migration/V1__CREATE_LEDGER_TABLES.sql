@@ -25,7 +25,7 @@ CREATE INDEX idx_ledger_entry_account
     ON ledger_entry (account_id);
 
 CREATE INDEX idx_ledger_entry_entry
-    ON ledger_entry (entry_id);
+    ON ledger_entry (id);
 
 CREATE INDEX idx_ledger_created_at
     ON ledger (created_at);
