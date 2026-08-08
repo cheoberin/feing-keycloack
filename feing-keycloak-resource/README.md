@@ -47,11 +47,48 @@ All endpoints are under `/api/v1/ledger` and require a Keycloak-issued bearer to
 
 OpenAPI/Swagger UI is available at `/swagger-ui.html` when the app is running.
 
+## Keycloak client setup (`ledger-service`)
+
+Tokens are authorized via a `JwtAuthenticationConverter` (see `SecurityConfig`) that reads
+`resource_access.ledger-service.roles` off the JWT and maps each role to a
+`ROLE_<role>` Spring authority. This means the `LEDGER_READER`/`LEDGER_WRITER` roles must be
+defined as **client roles on a `ledger-service` client**, not as realm roles.
+
+The `ledger-service` client itself is only used to hold those roles — it is not meant to issue
+tokens directly to end users. Calling services authenticate as their own confidential clients and
+get `ledger-service` roles assigned to their service account, so only other services (never
+interactive users) can obtain a token authorized against this API.
+
+Steps in the Keycloak admin console (realm `feing-keycloak`):
+
+1. **Clients → Create client**
+   - Client ID: `ledger-service`
+   - Client authentication: **On** (confidential client, gets a secret)
+   - Authentication flow: enable only **Service accounts roles**; disable **Standard flow**,
+     **Direct access grants**, and **Implicit flow**. This is what prevents any interactive/user
+     login through this client — it can only participate in machine-to-machine `client_credentials`
+     exchanges.
+2. **`ledger-service` client → Roles → Create role**
+   - Create client roles `LEDGER_READER` and `LEDGER_WRITER`.
+3. **For each calling service** (itself a confidential client with service accounts enabled):
+   - `<calling-service>` client → **Service accounts roles** tab → **Assign role** → filter by
+     client `ledger-service` → assign `LEDGER_READER` and/or `LEDGER_WRITER` as appropriate.
+4. Calling services obtain a token via the client-credentials grant:
+   ```
+   POST http://localhost:8090/realms/feing-keycloak/protocol/openid-connect/token
+   Content-Type: application/x-www-form-urlencoded
+
+   grant_type=client_credentials&client_id=<calling-service>&client_secret=<secret>
+   ```
+   The resulting token's `resource_access.ledger-service.roles` claim carries whichever of
+   `LEDGER_READER`/`LEDGER_WRITER` were assigned, which the converter turns into
+   `ROLE_LEDGER_READER`/`ROLE_LEDGER_WRITER` authorities for the `@PreAuthorize` checks above.
+
 ## Running locally
 
 The app reads `SPRING_PROFILES_ACTIVE` with no default, so a profile must be provided, e.g. `local`,
 which loads `application-local.yaml` (Postgres on `localhost:5432` and a Keycloak realm at
-`http://localhost:8082/realms/feing-keycloak`). Both need to be running separately; there is no
+`http://localhost:8090/realms/feing-keycloak`). Both need to be running separately; there is no
 docker-compose file in this repo yet.
 
 ```
